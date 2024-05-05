@@ -8,7 +8,7 @@ use ieee.numeric_std.all;
 entity pong_graph_st is
     port(
         clk, reset: in std_logic;
-        btn: in std_logic_vector(3 downto 0);
+        btn: in std_logic_vector(4 downto 0);
         video_on: in std_logic;
         pixel_x, pixel_y: in std_logic_vector(9 downto 0);
         graph_rgb: out std_logic_vector(2 downto 0)
@@ -53,20 +53,44 @@ architecture sq_ball_arch of pong_graph_st is
 -- square ball -- ball left, right, top and bottom
 -- all vary. Left and top driven by registers below.
     constant BALL_SIZE: integer := 8;
-    signal ball_x_l, ball_x_r: unsigned(9 downto 0);
-    signal ball_y_t, ball_y_b: unsigned(9 downto 0);
+    signal ball_x_l1, ball_x_r1: unsigned(9 downto 0);
+    signal ball_y_t1, ball_y_b1: unsigned(9 downto 0);
+
+    signal ball_x_l2, ball_x_r2: unsigned(9 downto 0);
+    signal ball_y_t2, ball_y_b2: unsigned(9 downto 0);
+
+    signal ball_x_l3, ball_x_r3: unsigned(9 downto 0);
+    signal ball_y_t3, ball_y_b3: unsigned(9 downto 0);
 
 -- reg to track left and top boundary
-    signal ball_x_reg, ball_x_next: unsigned(9 downto 0);
-    signal ball_y_reg, ball_y_next: unsigned(9 downto 0);
+    signal ball_x_reg1, ball_x_next1: unsigned(9 downto 0);
+    signal ball_y_reg1, ball_y_next1: unsigned(9 downto 0);
+
+    signal ball_x_reg2, ball_x_next2: unsigned(9 downto 0);
+    signal ball_y_reg2, ball_y_next2: unsigned(9 downto 0);
+
+    signal ball_x_reg3, ball_x_next3: unsigned(9 downto 0);
+    signal ball_y_reg3, ball_y_next3: unsigned(9 downto 0);
 
 -- reg to track ball speed
-    signal x_delta_reg, x_delta_next: unsigned(9 downto 0);
-    signal y_delta_reg, y_delta_next: unsigned(9 downto 0);
+    signal x_delta_reg1, x_delta_next1: unsigned(9 downto 0);
+    signal y_delta_reg1, y_delta_next1: unsigned(9 downto 0);
+
+    signal x_delta_reg2, x_delta_next2: unsigned(9 downto 0);
+    signal y_delta_reg2, y_delta_next2: unsigned(9 downto 0);
+
+    signal x_delta_reg3, x_delta_next3: unsigned(9 downto 0);
+    signal y_delta_reg3, y_delta_next3: unsigned(9 downto 0);
 
 -- ball movement can be pos or neg
-    constant BALL_V_P: unsigned(9 downto 0):= to_unsigned(2,10);
-    constant BALL_V_N: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
+    constant BALL_V_P1: unsigned(9 downto 0):= to_unsigned(1,10);
+    constant BALL_V_N1: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
+
+    constant BALL_V_P2: unsigned(9 downto 0):= to_unsigned(2,10);
+    constant BALL_V_N2: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
+
+    constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(3,10);
+    constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
 
 -- round ball image
     type rom_type is array(0 to 7) of std_logic_vector(0 to 7);
@@ -80,13 +104,21 @@ architecture sq_ball_arch of pong_graph_st is
         "01111110",
         "00111100");
     
-    signal rom_addr, rom_col: unsigned(2 downto 0);
-    signal rom_data: std_logic_vector(7 downto 0);
-    signal rom_bit: std_logic;
+    signal rom_addr1, rom_col1: unsigned(2 downto 0);
+    signal rom_data1: std_logic_vector(7 downto 0);
+    signal rom_bit1: std_logic;
+
+    signal rom_addr2, rom_col2: unsigned(2 downto 0);
+    signal rom_data2: std_logic_vector(7 downto 0);
+    signal rom_bit2: std_logic;
+
+    signal rom_addr3, rom_col3: unsigned(2 downto 0);
+    signal rom_data3: std_logic_vector(7 downto 0);
+    signal rom_bit3: std_logic;
 
 -- object output signals -- new signal to indicate if
 -- scan coord is within ball
-    signal wall_on, bar_on, sq_ball_on, rd_ball_on: std_logic;
+    signal wall_on, bar_on, sq_ball_on1, rd_ball_on1, sq_ball_on2, rd_ball_on2, sq_ball_on3, rd_ball_on3: std_logic;
     signal wall_rgb, bar_rgb, ball_rgb: std_logic_vector(2 downto 0);
 -- ====================================================
 
@@ -96,17 +128,40 @@ begin
         if (reset = '1') then
             bar_x_reg <= (others => '0');
             bar_y_reg <= (others => '0');
-            ball_x_reg <= (others => '0');
-            ball_y_reg <= (others => '0');
-            x_delta_reg <= ("0000000100");
-            y_delta_reg <= ("0000000100");
+
+            ball_x_reg1 <= (others => '0');
+            ball_y_reg1 <= (others => '0');
+            x_delta_reg1 <= ("0000000100");
+            y_delta_reg1 <= ("0000000100");
+
+            ball_x_reg2 <= (others => '0');
+            ball_y_reg2 <= (others => '0');
+            x_delta_reg2 <= ("0000000100");
+            y_delta_reg2 <= ("0000000100");
+
+            ball_x_reg3 <= (others => '0');
+            ball_y_reg3 <= (others => '0');
+            x_delta_reg3 <= ("0000000100");
+            y_delta_reg3 <= ("0000000100");
+
         elsif (clk'event and clk = '1') then
             bar_x_reg <= bar_x_next;
             bar_y_reg <= bar_y_next;
-            ball_x_reg <= ball_x_next;
-            ball_y_reg <= ball_y_next;
-            x_delta_reg <= x_delta_next;
-            y_delta_reg <= y_delta_next;
+            
+            ball_x_reg1 <= ball_x_next1;
+            ball_y_reg1 <= ball_y_next1;
+            x_delta_reg1 <= x_delta_next1;
+            y_delta_reg1 <= y_delta_next1;
+
+            ball_x_reg2 <= ball_x_next2;
+            ball_y_reg2 <= ball_y_next2;
+            x_delta_reg2 <= x_delta_next2;
+            y_delta_reg2 <= y_delta_next2;
+
+            ball_x_reg3 <= ball_x_next3;
+            ball_y_reg3 <= ball_y_next3;
+            x_delta_reg3 <= x_delta_next3;
+            y_delta_reg3 <= y_delta_next3;
         end if;
     end process;
 
@@ -138,7 +193,7 @@ begin
             if ( btn(1) = '1' and bar_y_b < (MAX_Y - 1 - BAR_V)) then
                 bar_y_next <= bar_y_reg + BAR_V;
         -- if btn 0 pressed and bar not at top yet
-            elsif ( btn(0) = '1' and bar_y_t > BAR_V) then
+            elsif ( btn(2) = '1' and bar_y_t > BAR_V) then
                 bar_y_next <= bar_y_reg - BAR_V;
             end if;
         end if;
@@ -151,69 +206,141 @@ begin
         if ( refr_tick = '1' ) then
         -- if btn 3 pressed and paddle not at right yet
             if ( btn(3) = '1' and bar_x_r < (MAX_X - 1 - BAR_X)) then
-                bar_x_next <= bar_x_reg + BAR_V;
+                bar_x_next <= bar_x_reg + BAR_X;
         -- if btn 2 pressed and bar not at left yet
-            elsif ( btn(2) = '1' and bar_x_l > BAR_X) then
+            elsif ( btn(4) = '1' and bar_x_l > BAR_X) then
                 bar_x_next <= bar_x_reg - BAR_X;
             end if;
         end if;
     end process;
 
 -- set coordinates of square ball.
-    ball_x_l <= ball_x_reg;
-    ball_y_t <= ball_y_reg;
-    ball_x_r <= ball_x_l + BALL_SIZE - 1;
-    ball_y_b <= ball_y_t + BALL_SIZE - 1;
+    ball_x_l1 <= ball_x_reg1;
+    ball_y_t1 <= ball_y_reg1;
+    ball_x_r1 <= ball_x_l1 + BALL_SIZE - 1;
+    ball_y_b1 <= ball_y_t1 + BALL_SIZE - 1;
+
+    ball_x_l2 <= ball_x_reg2;
+    ball_y_t2 <= ball_y_reg2;
+    ball_x_r2 <= ball_x_l2 + BALL_SIZE - 1;
+    ball_y_b2 <= ball_y_t2 + BALL_SIZE - 1;
+
+    ball_x_l3 <= ball_x_reg3;
+    ball_y_t3 <= ball_y_reg3;
+    ball_x_r3 <= ball_x_l3 + BALL_SIZE - 1;
+    ball_y_b3 <= ball_y_t3 + BALL_SIZE - 1;
 
 -- pixel within square ball
-    sq_ball_on <= '1' when (ball_x_l <= pix_x) and (pix_x <= ball_x_r) and (ball_y_t <= pix_y) and (pix_y <= ball_y_b) else '0';
+    sq_ball_on1 <= '1' when (ball_x_l1 <= pix_x) and (pix_x <= ball_x_r1) and (ball_y_t1 <= pix_y) and (pix_y <= ball_y_b1) else '0';
+    sq_ball_on2 <= '1' when (ball_x_l2 <= pix_x) and (pix_x <= ball_x_r2) and (ball_y_t2 <= pix_y) and (pix_y <= ball_y_b2) else '0';
+    sq_ball_on3 <= '1' when (ball_x_l3 <= pix_x) and (pix_x <= ball_x_r3) and (ball_y_t3 <= pix_y) and (pix_y <= ball_y_b3) else '0';
 
 -- map scan coord to ROM addr/col -- use low order three
 -- bits of pixel and ball positions.
 -- ROM row
-    rom_addr <= pix_y(2 downto 0) - ball_y_t(2 downto 0);
+    rom_addr1 <= pix_y(2 downto 0) - ball_y_t1(2 downto 0);
+    rom_addr2 <= pix_y(2 downto 0) - ball_y_t2(2 downto 0);
+    rom_addr3 <= pix_y(2 downto 0) - ball_y_t3(2 downto 0);
 
 -- ROM column
-    rom_col <= pix_x(2 downto 0) - ball_x_l(2 downto 0);
+    rom_col1 <= pix_x(2 downto 0) - ball_x_l1(2 downto 0);
+    rom_col2 <= pix_x(2 downto 0) - ball_x_l2(2 downto 0);
+    rom_col3 <= pix_x(2 downto 0) - ball_x_l3(2 downto 0);
 
 -- Get row data
-    rom_data <= BALL_ROM(to_integer(rom_addr));
+    rom_data1 <= BALL_ROM(to_integer(rom_addr1));
+    rom_data2 <= BALL_ROM(to_integer(rom_addr2));
+    rom_data3 <= BALL_ROM(to_integer(rom_addr3));
 
 -- Get column bit
-    rom_bit <= rom_data(to_integer(rom_col));
+    rom_bit1 <= rom_data1(to_integer(rom_col1));
+    rom_bit2 <= rom_data2(to_integer(rom_col2));
+    rom_bit3 <= rom_data3(to_integer(rom_col3));
 
 -- Turn ball on only if within square and ROM bit is 1.
-    rd_ball_on <= '1' when (sq_ball_on = '1') and (rom_bit = '1') else '0';
+    rd_ball_on1 <= '1' when (sq_ball_on1 = '1') and (rom_bit1 = '1') else '0';
+    rd_ball_on2 <= '1' when (sq_ball_on2 = '1') and (rom_bit2 = '1') else '0';
+    rd_ball_on3 <= '1' when (sq_ball_on3 = '1') and (rom_bit3 = '1') else '0';
 
     ball_rgb <= "100"; -- red
 -- Update the ball position 60 times per second.
-    ball_x_next <= ball_x_reg + x_delta_reg when refr_tick = '1' else ball_x_reg;
-    ball_y_next <= ball_y_reg + y_delta_reg when refr_tick = '1' else ball_y_reg;
+    ball_x_next1 <= ball_x_reg1 + x_delta_reg1 when refr_tick = '1' else ball_x_reg1;
+    ball_y_next1 <= ball_y_reg1 + y_delta_reg1 when refr_tick = '1' else ball_y_reg1;
+
+    ball_x_next2 <= ball_x_reg2 + x_delta_reg2 when refr_tick = '1' else ball_x_reg2;
+    ball_y_next2 <= ball_y_reg2 + y_delta_reg2 when refr_tick = '1' else ball_y_reg2;
+
+    ball_x_next3 <= ball_x_reg3 + x_delta_reg3 when refr_tick = '1' else ball_x_reg3;
+    ball_y_next3 <= ball_y_reg3 + y_delta_reg3 when refr_tick = '1' else ball_y_reg3;
 
 -- Set the value of the next ball position according to the boundaries.
-    process(x_delta_reg, y_delta_reg, ball_y_t, ball_x_l, ball_x_r, ball_y_t, ball_y_b, bar_y_t, bar_y_b)
+    process(x_delta_reg1, y_delta_reg1, ball_y_t1, ball_x_l1, ball_x_r1, ball_y_t1, ball_y_b1, bar_y_t, bar_y_b)
     begin
-        x_delta_next <= x_delta_reg;
-        y_delta_next <= y_delta_reg;
+        x_delta_next1 <= x_delta_reg1;
+        y_delta_next1 <= y_delta_reg1;
     -- ball reached top, make offset positive
-        if ( ball_y_t < 1 ) then
-            y_delta_next <= BALL_V_P;
+        if ( ball_y_t1 < 1 ) then
+            y_delta_next1 <= BALL_V_P1;
     -- reached bottom, make negative
-        elsif (ball_y_b > (MAX_Y - 1)) then
-            y_delta_next <= BALL_V_N;
+        elsif (ball_y_b1 > (MAX_Y - 1)) then
+            y_delta_next1 <= BALL_V_N1;
         -- reach wall, bounce back
-        elsif (ball_x_l <= WALL_X_R ) then
-            x_delta_next <= BALL_V_P;
+        elsif (ball_x_l1 <= WALL_X_R ) then
+            x_delta_next1 <= BALL_V_P1;
         -- right corner of ball inside bar
-        elsif ((BAR_X_L <= ball_x_r) and (ball_x_r <= BAR_X_R)) then
+        elsif ((BAR_X_L <= ball_x_r1) and (ball_x_r1 <= BAR_X_R)) then
         -- some portion of ball hitting paddle, reverse dir
-            if ((bar_y_t <= ball_y_b) and (ball_y_t <= bar_y_b)) then
-                x_delta_next <= BALL_V_N;
+            if ((bar_y_t <= ball_y_b1) and (ball_y_t1 <= bar_y_b)) then
+                x_delta_next1 <= BALL_V_N1;
             end if;
         end if;
     end process;
 
-    process (video_on, wall_on, bar_on, rd_ball_on, wall_rgb, bar_rgb, ball_rgb)
+    process(x_delta_reg2, y_delta_reg2, ball_y_t2, ball_x_l2, ball_x_r2, ball_y_t2, ball_y_b2, bar_y_t, bar_y_b)
+    begin
+        x_delta_next2 <= x_delta_reg2;
+        y_delta_next2 <= y_delta_reg2;
+    -- ball reached top, make offset positive
+        if ( ball_y_t2 < 1 ) then
+            y_delta_next2 <= BALL_V_P2;
+    -- reached bottom, make negative
+        elsif (ball_y_b2 > (MAX_Y - 1)) then
+            y_delta_next2 <= BALL_V_N2;
+        -- reach wall, bounce back
+        elsif (ball_x_l2 <= WALL_X_R ) then
+            x_delta_next2 <= BALL_V_P2;
+        -- right corner of ball inside bar
+        elsif ((BAR_X_L <= ball_x_r2) and (ball_x_r2 <= BAR_X_R)) then
+        -- some portion of ball hitting paddle, reverse dir
+            if ((bar_y_t <= ball_y_b2) and (ball_y_t2 <= bar_y_b)) then
+                x_delta_next2 <= BALL_V_N2;
+            end if;
+        end if;
+    end process;
+
+    process(x_delta_reg3, y_delta_reg3, ball_y_t3, ball_x_l3, ball_x_r3, ball_y_t3, ball_y_b3, bar_y_t, bar_y_b)
+    begin
+        x_delta_next3 <= x_delta_reg3;
+        y_delta_next3 <= y_delta_reg3;
+    -- ball reached top, make offset positive
+        if ( ball_y_t3 < 1 ) then
+            y_delta_next3 <= BALL_V_P3;
+    -- reached bottom, make negative
+        elsif (ball_y_b3 > (MAX_Y - 1)) then
+            y_delta_next3 <= BALL_V_N3;
+        -- reach wall, bounce back
+        elsif (ball_x_l3 <= WALL_X_R ) then
+            x_delta_next3 <= BALL_V_P3;
+        -- right corner of ball inside bar
+        elsif ((BAR_X_L <= ball_x_r3) and (ball_x_r3 <= BAR_X_R)) then
+        -- some portion of ball hitting paddle, reverse dir
+            if ((bar_y_t <= ball_y_b3) and (ball_y_t3 <= bar_y_b)) then
+                x_delta_next3 <= BALL_V_N3;
+            end if;
+        end if;
+    end process;
+
+    process (video_on, wall_on, bar_on, rd_ball_on1, rd_ball_on2, rd_ball_on3, wall_rgb, bar_rgb, ball_rgb)
     begin
         if (video_on = '0') then
             graph_rgb <= "000"; -- blank
@@ -222,7 +349,11 @@ begin
                 graph_rgb <= wall_rgb;
             elsif (bar_on = '1') then
                 graph_rgb <= bar_rgb;
-            elsif (rd_ball_on = '1') then
+            elsif (rd_ball_on1 = '1') then
+                graph_rgb <= ball_rgb;
+            elsif (rd_ball_on2 = '1') then
+                graph_rgb <= ball_rgb;
+            elsif (rd_ball_on3 = '1') then
                 graph_rgb <= ball_rgb;
             else
                 graph_rgb <= "110"; -- yellow bkgnd
