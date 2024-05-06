@@ -12,6 +12,7 @@ entity pong_graph_st is
         video_on: in std_logic;
         pixel_x, pixel_y: in std_logic_vector(9 downto 0);
         hit_cnt: out std_logic_vector(2 downto 0);
+        life_cnt: out std_logic_vector(1 downto 0);
         graph_rgb: out std_logic_vector(2 downto 0)
     );
 end pong_graph_st;
@@ -70,14 +71,14 @@ architecture sq_ball_arch of pong_graph_st is
     signal y_delta_reg3, y_delta_next3: unsigned(9 downto 0);
 
 -- ball movement can be pos or neg
-    constant BALL_V_P1: unsigned(9 downto 0):= to_unsigned(1,10);
-    constant BALL_V_N1: unsigned(9 downto 0):= unsigned(to_signed(-1,10));
+    constant BALL_V_P1: unsigned(9 downto 0):= to_unsigned(2,10);
+    constant BALL_V_N1: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
 
     constant BALL_V_P2: unsigned(9 downto 0):= to_unsigned(2,10);
     constant BALL_V_N2: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
 
-    constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(3,10);
-    constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
+    constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(2,10);
+    constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
 
 -- firing missile
     constant MISSILE_SIZE_Y: integer := 16;
@@ -178,6 +179,7 @@ architecture sq_ball_arch of pong_graph_st is
     signal missile_on: std_logic;
     signal wall_rgb, ball_rgb, tr_rgb, missile_rgb: std_logic_vector(2 downto 0);
 
+    signal life_cnt_reg, life_cnt_next: unsigned (1 downto 0);
     signal hit_log1, hit_log2, hit_log3: boolean;
     signal hit_cnt_reg, hit_cnt_next: unsigned (2 downto 0);
 -- ====================================================
@@ -191,14 +193,14 @@ begin
             x_delta_reg1 <= ("0000000100");
             y_delta_reg1 <= ("0000000100");
 
-            ball_x_reg2 <= (others => '0');
+            ball_x_reg2 <= ("0000000100");
             ball_y_reg2 <= (others => '0');
             x_delta_reg2 <= ("0000000100");
             y_delta_reg2 <= ("0000000100");
 
             ball_x_reg3 <= (others => '0');
             ball_y_reg3 <= (others => '0');
-            x_delta_reg3 <= ("0000000100");
+            x_delta_reg3 <= ("0000010100");
             y_delta_reg3 <= ("0000000100");
 
             tr_x_reg <= ("0011111100");
@@ -209,6 +211,7 @@ begin
             missile_fire_reg <= '0';
 
             hit_cnt_reg <= (others => '0');
+            life_cnt_reg <= (others => '0');
 
             btn_state_reg <= idle;
 
@@ -237,6 +240,7 @@ begin
             missile_fire_reg <= missile_fire_next;
 
             hit_cnt_reg <= hit_cnt_next;
+            life_cnt_reg <= life_cnt_next;
 
             btn_state_reg <= btn_state_next;
         end if;
@@ -528,9 +532,12 @@ begin
 
     hit_cnt_next <= hit_cnt_reg+1 when (hit_log1 or hit_log2 or hit_log3)
                     else hit_cnt_reg;
+    
+    life_cnt_next <= life_cnt_reg-1 when ((hit_log1 or hit_log2 or hit_log3) and hit_cnt_reg = "111") else life_cnt_reg;
                             
     -- output logic
     hit_cnt <= std_logic_vector(hit_cnt_reg);
+    life_cnt <= std_logic_vector(life_cnt_reg);
 end sq_ball_arch;
 
    
