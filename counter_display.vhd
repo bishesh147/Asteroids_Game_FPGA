@@ -40,17 +40,41 @@ architecture Behavioral of counter_disp is
         "0000000000000000"
     );
 
-    constant LIFE_X_L: unsigned := to_unsigned(550, 10) ;
-    constant LIFE_X_R: unsigned := LIFE_X_L + LIFE_SIZE - 1;
-    constant LIFE_Y_T: unsigned := to_unsigned(80, 10);
-    constant LIFE_Y_B: unsigned := LIFE_Y_T + LIFE_SIZE - 1;  
+    constant LIFE_X_L1: unsigned := to_unsigned(550, 10) ;
+    constant LIFE_X_R1: unsigned := LIFE_X_L1 + LIFE_SIZE - 1;
+    constant LIFE_Y_T1: unsigned := to_unsigned(80, 10);
+    constant LIFE_Y_B1: unsigned := LIFE_Y_T1 + LIFE_SIZE - 1;  
 
-    signal life_rom_addr, life_rom_col: unsigned(3 downto 0);
-    signal life_rom_data: std_logic_vector(15 downto 0);
-    signal life_rom_bit: std_logic;
+    signal life_rom_addr1, life_rom_col1: unsigned(3 downto 0);
+    signal life_rom_data1: std_logic_vector(15 downto 0);
+    signal life_rom_bit1: std_logic;
 
-    signal sq_life_on: std_logic;
-    signal life_life_on: std_logic;
+    signal sq_life_on1: std_logic;
+    signal life_life_on1: std_logic;
+
+    constant LIFE_X_L2: unsigned := to_unsigned(570, 10) ;
+    constant LIFE_X_R2: unsigned := LIFE_X_L2 + LIFE_SIZE - 1;
+    constant LIFE_Y_T2: unsigned := to_unsigned(80, 10);
+    constant LIFE_Y_B2: unsigned := LIFE_Y_T2 + LIFE_SIZE - 1;  
+
+    signal life_rom_addr2, life_rom_col2: unsigned(3 downto 0);
+    signal life_rom_data2: std_logic_vector(15 downto 0);
+    signal life_rom_bit2: std_logic;
+
+    signal sq_life_on2: std_logic;
+    signal life_life_on2: std_logic;
+
+    constant LIFE_X_L3: unsigned := to_unsigned(590, 10) ;
+    constant LIFE_X_R3: unsigned := LIFE_X_L3 + LIFE_SIZE - 1;
+    constant LIFE_Y_T3: unsigned := to_unsigned(80, 10);
+    constant LIFE_Y_B3: unsigned := LIFE_Y_T3 + LIFE_SIZE - 1;  
+
+    signal life_rom_addr3, life_rom_col3: unsigned(3 downto 0);
+    signal life_rom_data3: std_logic_vector(15 downto 0);
+    signal life_rom_bit3: std_logic;
+
+    signal sq_life_on3: std_logic;
+    signal life_life_on3: std_logic;
 
     signal hit_cnter: unsigned(2 downto 0);
     -- Square cnter size and boundaries
@@ -238,7 +262,10 @@ begin
     -- Note: the square area is a fixed area shared by 8 counter values
 
     sq_hit_cnter_on <= '1' when (HIT_CNT_X_L <= pix_x) and (pix_x <= HIT_CNT_X_R) and (HIT_CNT_Y_T <= pix_y) and (pix_y <= HIT_CNT_Y_B) else '0';
-    sq_life_on <= '1' when (LIFE_X_L <= pix_x) and (pix_x <= LIFE_X_R) and (LIFE_Y_T <= pix_y) and (pix_y <= LIFE_Y_B) else '0';
+
+    sq_life_on1 <= '1' when (LIFE_X_L1 <= pix_x) and (pix_x <= LIFE_X_R1) and (LIFE_Y_T1 <= pix_y) and (pix_y <= LIFE_Y_B1) else '0';
+    sq_life_on2 <= '1' when (LIFE_X_L2 <= pix_x) and (pix_x <= LIFE_X_R2) and (LIFE_Y_T2 <= pix_y) and (pix_y <= LIFE_Y_B2) else '0';
+    sq_life_on3 <= '1' when (LIFE_X_L3 <= pix_x) and (pix_x <= LIFE_X_R3) and (LIFE_Y_T3 <= pix_y) and (pix_y <= LIFE_Y_B3) else '0';
     --- Write your VHDL code: complete “with select�? statement below:
     --- Here we use a signal ‘cnter_rom_current’ to store the actual
     --- ROM image to be displayed which depends on the current cnter value.
@@ -255,11 +282,23 @@ begin
                         CNTER_ROM_7 when others;
     --- Complete the above “with-select�? statement
 
-    life_rom_addr <= pix_y(3 downto 0) - LIFE_Y_T(3 downto 0);
-    life_rom_col <= pix_x(3 downto 0) - LIFE_X_L(3 downto 0);
+    life_rom_addr1 <= pix_y(3 downto 0) - LIFE_Y_T1(3 downto 0);
+    life_rom_col1 <= pix_x(3 downto 0) - LIFE_X_L1(3 downto 0);
 
-    life_rom_data <= LIFE_ROM(to_integer(life_rom_addr));
-    life_rom_bit <= life_rom_data(to_integer(life_rom_col));
+    life_rom_data1 <= LIFE_ROM(to_integer(life_rom_addr1));
+    life_rom_bit1 <= life_rom_data1(to_integer(life_rom_col1));
+
+    life_rom_addr2 <= pix_y(3 downto 0) - LIFE_Y_T2(3 downto 0);
+    life_rom_col2 <= pix_x(3 downto 0) - LIFE_X_L2(3 downto 0);
+
+    life_rom_data2 <= LIFE_ROM(to_integer(life_rom_addr2));
+    life_rom_bit2 <= life_rom_data2(to_integer(life_rom_col2));
+
+    life_rom_addr3 <= pix_y(3 downto 0) - LIFE_Y_T3(3 downto 0);
+    life_rom_col3 <= pix_x(3 downto 0) - LIFE_X_L3(3 downto 0);
+
+    life_rom_data3 <= LIFE_ROM(to_integer(life_rom_addr3));
+    life_rom_bit3 <= life_rom_data3(to_integer(life_rom_col3));
 
     -- type conversion to unsigned values
     hit_cnt_y_t_u <= to_unsigned(HIT_CNT_Y_T, 10);
@@ -279,13 +318,15 @@ begin
     -- set the cnter value color
     hit_cnter_rgb <= "100";
 
-    life_life_on <= '1' when (sq_life_on = '1') and (life_rom_bit = '1') else '0';
+    life_life_on1 <= '1' when (sq_life_on1 = '1') and (life_rom_bit1 = '1') else '0';
+    life_life_on2 <= '1' when (sq_life_on2 = '1') and (life_rom_bit2 = '1') else '0';
+    life_life_on3 <= '1' when (sq_life_on3 = '1') and (life_rom_bit3 = '1') else '0';
 
     --- Write your VHDL code below:
     -- set graph_rgb
 
-    graph_rgb <= hit_cnter_rgb when ((hit_cnter_cur_val_on = '1') or (life_life_on = '1')) else "110";
+    graph_rgb <= hit_cnter_rgb when ((hit_cnter_cur_val_on = '1') or (life_life_on1 = '1') or (life_life_on2 = '1') or (life_life_on3 = '1')) else "110";
 
     -- assign output sq_hit_cnter_on_output
-    sq_hit_cnter_on_output <= sq_hit_cnter_on or sq_life_on;
+    sq_hit_cnter_on_output <= sq_hit_cnter_on or sq_life_on1 or sq_life_on2 or sq_life_on3;
     end Behavioral;
