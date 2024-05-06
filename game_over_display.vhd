@@ -212,6 +212,18 @@ architecture arch of game_over_display is
     signal sq_E_on1: std_logic;
     signal E_E_on1: std_logic;
 
+    constant E_X_L2: unsigned := to_unsigned(490, 10);
+    constant E_X_R2: unsigned := E_X_L2 + LETTER_SIZE - 1;
+    constant E_Y_T2: unsigned := to_unsigned(150, 10);
+    constant E_Y_B2: unsigned := E_Y_T2 + LETTER_SIZE - 1;
+
+    signal E_rom_addr2, E_rom_col2: unsigned(4 downto 0);
+    signal E_rom_data2: std_logic_vector(31 downto 0);
+    signal E_rom_bit2: std_logic;
+
+    signal sq_E_on2: std_logic;
+    signal E_E_on2: std_logic;
+
 
     constant O_ROM: letter_type:= (
         "11111111111111111111111111111111",
@@ -307,6 +319,54 @@ architecture arch of game_over_display is
 
     signal sq_V_on1: std_logic;
     signal V_V_on1: std_logic;
+
+
+    constant R_ROM: letter_type:= (
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "00000000000000000000000000011011",
+        "00000000000000000000000001110011",
+        "00000000000000000000000111000011",
+        "00000000000000000000011100000011",
+        "00000000000000000001110000000011",
+        "00000000000000000111000000000011",
+        "00000000000000011100000000000011",
+        "00000000000001110000000000000011",
+        "00000000000111000000000000000011",
+        "00000000011100000000000000000011",
+        "00000001110000000000000000000011",
+        "00000111000000000000000000000011",
+        "00011100000000000000000000000011",
+        "01110000000000000000000000000011",
+        "11100000000000000000000000000011",
+        "11100000000000000000000000000011"
+    );
+
+    constant R_X_L1: unsigned := to_unsigned(530, 10);
+    constant R_X_R1: unsigned := R_X_L1 + LETTER_SIZE - 1;
+    constant R_Y_T1: unsigned := to_unsigned(150, 10);
+    constant R_Y_B1: unsigned := R_Y_T1 + LETTER_SIZE - 1;
+
+    signal R_rom_addr1, R_rom_col1: unsigned(4 downto 0);
+    signal R_rom_data1: std_logic_vector(31 downto 0);
+    signal R_rom_bit1: std_logic;
+
+    signal sq_R_on1: std_logic;
+    signal R_R_on1: std_logic;
     
 begin
     pix_x <= unsigned(pixel_x);
@@ -354,7 +414,21 @@ begin
     V_rom_bit1 <= V_rom_data1(to_integer(V_rom_col1));
     V_V_on1 <= '1' when (sq_V_on1 = '1') and (V_rom_bit1 = '1') else '0';
 
-    graph_rgb <= LETTER_RGB when ((G_G_on1 = '1') or (A_A_on1 = '1') or (M_M_on1 = '1') or (E_E_on1 = '1') or (O_O_on1 = '1') or (V_V_on1 = '1')) else "000";
+    sq_E_on2 <= '1' when (E_X_L2 <= pix_x) and (pix_x <= E_X_R2) and (E_Y_T2 <= pix_y) and (pix_y <= E_Y_B2) else '0';
+    E_rom_addr2 <= pix_y(4 downto 0) - E_Y_T2(4 downto 0);
+    E_rom_col2 <= pix_x(4 downto 0) - E_X_L2(4 downto 0);
+    E_rom_data2 <= E_ROM(to_integer(E_rom_addr2));
+    E_rom_bit2 <= E_rom_data1(to_integer(E_rom_col2));
+    E_E_on2 <= '1' when (sq_E_on2 = '1') and (E_rom_bit2 = '1') else '0';
+
+    sq_R_on1 <= '1' when (R_X_L1 <= pix_x) and (pix_x <= R_X_R1) and (R_Y_T1 <= pix_y) and (pix_y <= R_Y_B1) else '0';
+    R_rom_addr1 <= pix_y(4 downto 0) - R_Y_T1(4 downto 0);
+    R_rom_col1 <= pix_x(4 downto 0) - R_X_L1(4 downto 0);
+    R_rom_data1 <= R_ROM(to_integer(R_rom_addr1));
+    R_rom_bit1 <= R_rom_data1(to_integer(R_rom_col1));
+    R_R_on1 <= '1' when (sq_R_on1 = '1') and (R_rom_bit1 = '1') else '0';
+
+    graph_rgb <= LETTER_RGB when ((G_G_on1 = '1') or (A_A_on1 = '1') or (M_M_on1 = '1') or (E_E_on1 = '1') or (O_O_on1 = '1') or (V_V_on1 = '1') or (E_E_on2 = '1') or (R_R_on1 = '1')) else "000";
 end arch;
 
 
