@@ -506,16 +506,16 @@ begin
                 end if;
 
             when button_out =>
-                if (dir_state_reg = up) then
+                if (dir_state_reg = up or life_cnt_reg = "01") then
                     missile_fire_next1 <= '1';
                 end if;
-                if (dir_state_reg = down) then
+                if (dir_state_reg = down or life_cnt_reg = "01") then
                     missile_fire_next2 <= '1';
                 end if;
-                if (dir_state_reg = right) then
+                if (dir_state_reg = right or life_cnt_reg = "01") then
                     missile_fire_next3 <= '1';
                 end if;
-                if (dir_state_reg = left) then
+                if (dir_state_reg = left or life_cnt_reg = "01") then
                     missile_fire_next4 <= '1';
                 end if;
                 btn_state_next <= idle;
