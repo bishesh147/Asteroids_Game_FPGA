@@ -11,6 +11,7 @@ entity pong_graph_st is
         btn: in std_logic_vector(4 downto 0);
         video_on: in std_logic;
         pixel_x, pixel_y: in std_logic_vector(9 downto 0);
+        ch_dir: in std_logic;
         hit_cnt: out std_logic_vector(2 downto 0);
         life_cnt: out std_logic_vector(1 downto 0);
         graph_rgb: out std_logic_vector(2 downto 0)
@@ -116,7 +117,7 @@ architecture sq_ball_arch of pong_graph_st is
 
     signal missile_fire_reg3, missile_fire_next3: std_logic;
 
-    constant MISSILE_V3: integer := 2;
+    constant MISSILE_V3: integer := -2;
 
     -- reg to track left and top boundary
     signal missile_x_reg3, missile_x_next3: unsigned(9 downto 0);
@@ -130,7 +131,7 @@ architecture sq_ball_arch of pong_graph_st is
 
     signal missile_fire_reg4, missile_fire_next4: std_logic;
 
-    constant MISSILE_V4: integer := -2;
+    constant MISSILE_V4: integer := 2;
 
 -- reg to track left and top boundary
     signal missile_x_reg4, missile_x_next4: unsigned(9 downto 0);
@@ -139,6 +140,14 @@ architecture sq_ball_arch of pong_graph_st is
 -- reg to track middle button press
     type btn_state is (idle, button_in, button_out);
     signal btn_state_reg, btn_state_next: btn_state;
+
+-- reg to track orientation state:
+    type dir_state is (up, right, down, left);
+    signal dir_state_reg, dir_state_next: dir_state;
+
+-- reg to track direction button state
+    signal dir_btn_state_reg, dir_btn_state_next: btn_state;
+    signal dir_change_reg, dir_change_next: std_logic;
 
 -- Triangle
     constant TR_SIZE: integer := 32;
@@ -162,7 +171,7 @@ architecture sq_ball_arch of pong_graph_st is
         "00111100");
         
     type tr_rom_type is array(0 to 31) of std_logic_vector(0 to 31);
-    constant TR_ROM: tr_rom_type:= (
+    constant TR_ROM1: tr_rom_type:= ( --up
         "00000000000000001000000000000000",
         "00000000000000011100000000000000",
         "00000000000000111110000000000000",
@@ -195,6 +204,109 @@ architecture sq_ball_arch of pong_graph_st is
         "11111111111111111111111111111111",
         "11111111111111111111111111111111",
         "11111111111111111111111111111111");
+    
+    constant TR_ROM2: tr_rom_type:= ( --right
+        "11111111111111110000000000000000",
+        "11111111111111111100000000000000",
+        "11111111111111111110000000000000",
+        "11111111111111111111000000000000",
+        "11111111111111111111100000000000",
+        "11111111111111111111110000000000",
+        "11111111111111111111111000000000",
+        "11111111111111111111111100000000",
+        "11111111111111111111111110000000",
+        "11111111111111111111111111000000",
+        "11111111111111111111111111100000",
+        "11111111111111111111111111110000",
+        "11111111111111111111111111111000",
+        "11111111111111111111111111111100",
+        "11111111111111111111111111111110",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111110",
+        "11111111111111111111111111111100",
+        "11111111111111111111111111111000",
+        "11111111111111111111111111110000",
+        "11111111111111111111111111100000",
+        "11111111111111111111111111000000",
+        "11111111111111111111111110000000",
+        "11111111111111111111111100000000",
+        "11111111111111111111111000000000",
+        "11111111111111111111110000000000",
+        "11111111111111111111100000000000",
+        "11111111111111111111000000000000",
+        "11111111111111111110000000000000",
+        "11111111111111111100000000000000",
+        "11111111111111111000000000000000",
+        "11111111111111110000000000000000");
+    
+    constant TR_ROM3: tr_rom_type:= ( --down
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "01111111111111111111111111111111",
+        "00111111111111111111111111111110",
+        "00011111111111111111111111111100",
+        "00001111111111111111111111111000",
+        "00000111111111111111111111110000",
+        "00000011111111111111111111100000",
+        "00000001111111111111111111000000",
+        "00000000111111111111111110000000",
+        "00000000011111111111111100000000",
+        "00000000001111111111111000000000",
+        "00000000000111111111110000000000",
+        "00000000000011111111100000000000",
+        "00000000000001111111000000000000",
+        "00000000000000111110000000000000",
+        "00000000000000011100000000000000",
+        "00000000000000001000000000000000"
+        );
+    
+    constant TR_ROM4: tr_rom_type:= (
+        "00000000000000001111111111111111",
+        "00000000000000011111111111111111",
+        "00000000000000111111111111111111",
+        "00000000000001111111111111111111",
+        "00000000000011111111111111111111",
+        "00000000000111111111111111111111",
+        "00000000001111111111111111111111",
+        "00000000011111111111111111111111",
+        "00000000111111111111111111111111",
+        "00000001111111111111111111111111",
+        "00000011111111111111111111111111",
+        "00000111111111111111111111111111",
+        "00001111111111111111111111111111",
+        "00011111111111111111111111111111",
+        "00111111111111111111111111111111",
+        "01111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "01111111111111111111111111111111",
+        "00111111111111111111111111111111",
+        "00011111111111111111111111111111",
+        "00001111111111111111111111111111",
+        "00000111111111111111111111111111",
+        "00000011111111111111111111111111",
+        "00000001111111111111111111111111",
+        "00000000111111111111111111111111",
+        "00000000011111111111111111111111",
+        "00000000001111111111111111111111",
+        "00000000000111111111111111111111",
+        "00000000000011111111111111111111",
+        "00000000000001111111111111111111",
+        "00000000000000111111111111111111",
+        "00000000000000011111111111111111");
     
     signal rom_addr1, rom_col1: unsigned(2 downto 0);
     signal rom_data1: std_logic_vector(7 downto 0);
@@ -269,6 +381,10 @@ begin
 
             btn_state_reg <= idle;
 
+            dir_state_reg <= up;
+            dir_btn_state_reg <= idle;
+            dir_change_reg <= '0';
+
         elsif (clk'event and clk = '1') then
             ball_x_reg1 <= ball_x_next1;
             ball_y_reg1 <= ball_y_next1;
@@ -308,6 +424,10 @@ begin
             life_cnt_reg <= life_cnt_next;
 
             btn_state_reg <= btn_state_next;
+
+            dir_state_reg <= dir_state_next;
+            dir_btn_state_reg <= dir_btn_state_next;
+            dir_change_reg <= dir_change_next;
         end if;
     end process;
 
@@ -352,8 +472,8 @@ begin
         end if;
     end process;
 
-    -- Process for middle button
-    process(btn_state_reg, btn_state_next, btn, missile_fire_next1, missile_fire_next2, missile_fire_next3, missile_fire_next4, missile_y_t1, missile_y_t2, missile_x_l1, missile_x_l2)
+    -- Process for missile firing conditions
+    process(btn_state_reg, btn_state_next, btn, missile_fire_next1, missile_fire_next2, missile_fire_next3, missile_fire_next4, missile_y_t1, missile_y_t2, missile_x_l1, missile_x_l2, dir_state_reg)
     begin
         btn_state_next <= btn_state_reg;
         missile_fire_next1 <= missile_fire_reg1;
@@ -366,12 +486,12 @@ begin
                     btn_state_next <= button_in;
                 end if;
 
-                if ((missile_y_t1 < 1) or (missile_y_t2 < 1)) then
+                if ((missile_y_t1 < 10) or (missile_y_t2 < 10)) then
                     missile_fire_next1 <= '0';
                     missile_fire_next2 <= '0';
                 end if;
 
-                if ((missile_x_l1 < 1) or (missile_x_l2 < 1)) then
+                if ((missile_x_l3 < 10) or (missile_x_l4 < 10)) then
                     missile_fire_next3 <= '0';
                     missile_fire_next4 <= '0';
                 end if;
@@ -386,11 +506,67 @@ begin
                 end if;
 
             when button_out =>
-                missile_fire_next1 <= '1';
-                missile_fire_next2 <= '1';
-                missile_fire_next3 <= '1';
-                missile_fire_next4 <= '1';
+                if (dir_state_reg = up) then
+                    missile_fire_next1 <= '1';
+                end if;
+                if (dir_state_reg = down) then
+                    missile_fire_next2 <= '1';
+                end if;
+                if (dir_state_reg = right) then
+                    missile_fire_next3 <= '1';
+                end if;
+                if (dir_state_reg = left) then
+                    missile_fire_next4 <= '1';
+                end if;
                 btn_state_next <= idle;
+        end case;
+    end process;
+
+    -- Process for direction change button
+    process(dir_btn_state_reg, dir_btn_state_next, ch_dir, dir_change_next)
+    begin
+        dir_btn_state_next <= dir_btn_state_reg;
+        dir_change_next <= '0';
+        case dir_btn_state_reg is
+            when idle =>
+                if (ch_dir = '1') then
+                    dir_btn_state_next <= button_in;
+                end if;
+                dir_change_next <= '0';
+
+            when button_in =>
+                if (ch_dir = '0') then
+                    dir_btn_state_next <= button_out;
+                end if;
+                dir_change_next <= '0';
+
+            when button_out =>
+                dir_change_next <= '1';
+                dir_btn_state_next <= idle;
+        end case;
+    end process;
+
+    --Process for direction change
+    process(dir_change_reg, dir_state_reg)
+    begin
+        dir_state_next <= dir_state_reg;
+        case dir_state_reg is
+            when up =>
+                if (dir_change_reg = '1') then
+                    dir_state_next <= right;
+                end if;
+            when right =>
+                if (dir_change_reg = '1') then
+                    dir_state_next <= down;
+                end if;
+            when down =>
+                if (dir_change_reg = '1') then
+                    dir_state_next <= left;
+                end if;
+            when left =>
+                if (dir_change_reg = '1') then
+                    dir_state_next <= up;
+                end if;
         end case;
     end process;
 
@@ -543,7 +719,10 @@ begin
     rom_data2 <= BALL_ROM(to_integer(rom_addr2));
     rom_data3 <= BALL_ROM(to_integer(rom_addr3));
 
-    tr_rom_data <= TR_ROM(to_integer(tr_rom_addr));
+    tr_rom_data <= TR_ROM1(to_integer(tr_rom_addr)) when (dir_state_reg = up) else
+                    TR_ROM2(to_integer(tr_rom_addr)) when (dir_state_reg = right) else
+                    TR_ROM3(to_integer(tr_rom_addr)) when (dir_state_reg = down) else
+                    TR_ROM4(to_integer(tr_rom_addr)) when (dir_state_reg = left);
 
 -- Get column bit
     rom_bit1 <= rom_data1(to_integer(rom_col1));

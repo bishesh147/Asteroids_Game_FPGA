@@ -5,6 +5,7 @@ entity pong_top_st is
     port(
         clk, reset: in std_logic;
         btn: in std_logic_vector(4 downto 0);
+        ch_dir: in std_logic;
         hsync, vsync: out std_logic;
         -- rgb_8bit: out std_logic_vector(23 downto 0);
         rgb_top: out std_logic_vector(2 downto 0);
@@ -30,7 +31,7 @@ begin
     -- instantiate pixel generation circuit
     pong_grf_st_unit: entity work.pong_graph_st(sq_ball_arch)
         port map(clk=>clk, reset=>reset, btn=>btn,
-        video_on=>video_on, pixel_x=>pixel_x,
+        video_on=>video_on, pixel_x=>pixel_x, ch_dir=>ch_dir,
         pixel_y=>pixel_y, hit_cnt=>hit_cnt, life_cnt=>life_cnt,
         graph_rgb=>pong_graph_rgb);
 
