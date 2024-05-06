@@ -78,6 +78,24 @@ architecture sq_ball_arch of pong_graph_st is
     constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(3,10);
     constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
 
+-- firing missile
+    constant MISSILE_SIZE_Y: integer := 16;
+    constant MISSILE_SIZE_X: integer := 8;
+    signal missile_x_l, missile_x_r: unsigned(9 downto 0);
+    signal missile_y_t, missile_y_b: unsigned(9 downto 0);
+
+    signal missile_fire_reg, missile_fire_next: std_logic;
+
+    constant MISSILE_V: integer := 2;
+
+-- reg to track left and top boundary
+    signal missile_x_reg, missile_x_next: unsigned(9 downto 0);
+    signal missile_y_reg, missile_y_next: unsigned(9 downto 0);
+
+-- reg to track middle button press
+    type btn_state is (idle, button_in, button_out);
+    signal btn_state_reg, btn_state_next: btn_state;
+
 -- Triangle
     constant TR_SIZE: integer := 32;
     signal tr_x_l, tr_x_r: unsigned(9 downto 0);
@@ -156,7 +174,8 @@ architecture sq_ball_arch of pong_graph_st is
     signal wall_on: std_logic;
     signal sq_ball_on1, rd_ball_on1, sq_ball_on2, rd_ball_on2, sq_ball_on3, rd_ball_on3: std_logic;
     signal sq_tr_on, tr_tr_on: std_logic;
-    signal wall_rgb, ball_rgb, tr_rgb: std_logic_vector(2 downto 0);
+    signal missile_on: std_logic;
+    signal wall_rgb, ball_rgb, tr_rgb, missile_rgb: std_logic_vector(2 downto 0);
 -- ====================================================
 
 begin
@@ -181,6 +200,12 @@ begin
             tr_x_reg <= ("0011111100");
             tr_y_reg <= ("0011111100");
 
+            missile_x_reg <= ("0011111100");
+            missile_y_reg <= ("0011111100");
+            missile_fire_reg <= '0';
+
+            btn_state_reg <= idle;
+
         elsif (clk'event and clk = '1') then
             ball_x_reg1 <= ball_x_next1;
             ball_y_reg1 <= ball_y_next1;
@@ -199,6 +224,13 @@ begin
 
             tr_x_reg <= tr_x_next;
             tr_y_reg <= tr_y_next;
+
+            missile_x_reg <= missile_x_next;
+            missile_y_reg <= missile_y_next;
+            
+            missile_fire_reg <= missile_fire_next;
+
+            btn_state_reg <= btn_state_next;
         end if;
     end process;
 
@@ -243,6 +275,50 @@ begin
         end if;
     end process;
 
+    -- Process for middle button
+    process(btn_state_reg, btn_state_next, btn, missile_fire_next, missile_y_t)
+    begin
+        btn_state_next <= btn_state_reg;
+        missile_fire_next <= missile_fire_reg;
+        case btn_state_reg is
+            when idle =>
+                if (btn(0) = '1') then
+                    btn_state_next <= button_in;
+                end if;
+
+                if (missile_y_t < 1) then
+                    missile_fire_next <= '0';
+                else
+                    missile_fire_next <= missile_fire_reg;
+                end if;
+            
+            when button_in =>
+                missile_fire_next <= '0';
+                if (btn(0) = '0') then
+                    btn_state_next <= button_out;
+                end if;
+
+            when button_out =>
+                missile_fire_next <= '1';
+                btn_state_next <= idle;
+        end case;
+    end process;
+
+    -- Process for missile
+    process(missile_x_reg, missile_y_reg, missile_x_next, missile_y_next, missile_y_t, missile_fire_reg, missile_fire_next, tr_x_l, tr_y_t, refr_tick)
+    begin
+        if (refr_tick = '1') then
+            if (missile_fire_reg = '1') then
+                missile_x_next <= missile_x_reg;
+                missile_y_next <= missile_y_reg - MISSILE_V;
+            else
+                missile_x_next <= tr_x_l + TR_SIZE/2;
+                missile_y_next <= tr_y_t;
+            end if;
+        end if;
+    end process;
+
+
 -- set coordinates of square ball.
     ball_x_l1 <= ball_x_reg1;
     ball_y_t1 <= ball_y_reg1;
@@ -264,6 +340,14 @@ begin
     tr_y_t <= tr_y_reg;
     tr_x_r <= tr_x_l + TR_SIZE - 1;
     tr_y_b <= tr_y_t + TR_SIZE - 1;
+
+-- pixel within missile.
+    missile_x_l <= missile_x_reg;
+    missile_y_t <= missile_y_reg;
+    missile_x_r <= missile_x_l + MISSILE_SIZE_X - 1;
+    missile_y_b <= missile_y_t + MISSILE_SIZE_Y - 1;
+    missile_on <= '1' when (missile_x_l <= pix_x) and (pix_x <= missile_x_r) and (missile_y_t <= pix_y) and (pix_y <= missile_y_b) and (missile_fire_reg = '1') else '0';
+    missile_rgb <= "100"; --white
 
 -- pixel within square ball
     sq_ball_on1 <= '1' when (ball_x_l1 <= pix_x) and (pix_x <= ball_x_r1) and (ball_y_t1 <= pix_y) and (pix_y <= ball_y_b1) else '0';
@@ -398,6 +482,8 @@ begin
                 graph_rgb <= wall_rgb;
             elsif (tr_tr_on = '1') then
                 graph_rgb <= tr_rgb;
+            elsif (missile_on = '1') then
+                graph_rgb <= missile_rgb;
             elsif (rd_ball_on1 = '1') then
                 graph_rgb <= ball_rgb;
             elsif (rd_ball_on2 = '1') then
