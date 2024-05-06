@@ -318,9 +318,9 @@ begin
     -- set the cnter value color
     hit_cnter_rgb <= "100";
 
-    life_life_on1 <= '1' when (sq_life_on1 = '1') and (life_rom_bit1 = '1') else '0';
-    life_life_on2 <= '1' when (sq_life_on2 = '1') and (life_rom_bit2 = '1') else '0';
-    life_life_on3 <= '1' when (sq_life_on3 = '1') and (life_rom_bit3 = '1') else '0';
+    life_life_on1 <= '1' when (sq_life_on1 = '1') and (life_rom_bit1 = '1') and (life_cnt > "10") else '0';
+    life_life_on2 <= '1' when (sq_life_on2 = '1') and (life_rom_bit2 = '1') and (life_cnt > "01") else '0';
+    life_life_on3 <= '1' when (sq_life_on3 = '1') and (life_rom_bit3 = '1') and (life_cnt > "00") else '0';
 
     --- Write your VHDL code below:
     -- set graph_rgb

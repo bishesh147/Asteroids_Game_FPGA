@@ -211,7 +211,7 @@ begin
             missile_fire_reg <= '0';
 
             hit_cnt_reg <= (others => '0');
-            life_cnt_reg <= (others => '0');
+            life_cnt_reg <= ("11");
 
             btn_state_reg <= idle;
 

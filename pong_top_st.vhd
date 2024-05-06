@@ -18,7 +18,7 @@ architecture arch of pong_top_st is
     signal pixel_x, pixel_y: std_logic_vector(9 downto 0);
     signal video_on: std_logic;
     signal rgb_reg, rgb_next: std_logic_vector(2 downto 0);
-    signal rgb, pong_graph_rgb, hit_cnter_rgb: std_logic_vector(2 downto 0);
+    signal rgb, pong_graph_rgb, hit_cnter_rgb, game_over_rgb: std_logic_vector(2 downto 0);
     signal p_tick: std_logic;
     signal hit_cnt: std_logic_vector(2 downto 0);
     signal life_cnt: std_logic_vector(1 downto 0);
@@ -33,6 +33,10 @@ begin
         video_on=>video_on, pixel_x=>pixel_x,
         pixel_y=>pixel_y, hit_cnt=>hit_cnt, life_cnt=>life_cnt,
         graph_rgb=>pong_graph_rgb);
+
+    game_over_display_unit: entity work.game_over_display
+        port map(clk=>clk, reset=>reset, pixel_x=>pixel_x, pixel_y=>pixel_y,
+        life_cnt=>life_cnt, graph_rgb=>game_over_rgb);
     
     -- instantiate pixel generation circuit for counter_disp
     counter_disp_unit: entity work.counter_disp
@@ -59,6 +63,7 @@ begin
     blank <= video_on;
     -- when the current pixel is located within the “sq_hit_cnter�? area, -- assign ‘hit_cnter_rgb’ to final ‘rgb’, otherwise assign
     --- ‘pong_graph_rgb’ to the final “rgb�?;
-    rgb_next <= hit_cnter_rgb when sq_hit_cnter_on = '1' else
-        pong_graph_rgb;
+    rgb_next <= game_over_rgb when (life_cnt = "00") else
+                hit_cnter_rgb when (sq_hit_cnter_on = '1') else 
+                pong_graph_rgb;
 end arch;
