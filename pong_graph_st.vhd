@@ -30,25 +30,11 @@ architecture sq_ball_arch of pong_graph_st is
 -- wall left and right boundary of wall (full height)
     constant WALL_X_L: integer := 32;
     constant WALL_X_R: integer := 35;
-    
--- paddle left, right, top, bottom and height left &
--- right are constant. top & bottom are signals to
--- allow movement. bar_y_t driven by reg below.
-    signal bar_x_l, bar_x_r: unsigned(9 downto 0);
-    signal bar_y_t, bar_y_b: unsigned(9 downto 0);
-    constant BAR_Y_SIZE: integer := 72;
-    constant BAR_X_SIZE: integer := 10;
 
--- reg to track top boundary
-    signal bar_y_reg, bar_y_next: unsigned(9 downto 0);
-
--- reg to track left boundary
-    signal bar_x_reg, bar_x_next: unsigned(9 downto 0);
-
--- bar moving velocity when a button is pressed
--- the amount the bar is moved.
-    constant BAR_V: integer:= 4;
-    constant BAR_X: integer:= 3;
+-- triangle moving velocity when a button is pressed
+-- the amount the triangle is moved.
+    constant TR_V: integer:= 3;
+    constant TR_X: integer:= 3;
 
 -- square ball -- ball left, right, top and bottom
 -- all vary. Left and top driven by registers below.
@@ -92,9 +78,18 @@ architecture sq_ball_arch of pong_graph_st is
     constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(3,10);
     constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
 
+-- Triangle
+    constant TR_SIZE: integer := 32;
+    signal tr_x_l, tr_x_r: unsigned(9 downto 0);
+    signal tr_y_t, tr_y_b: unsigned(9 downto 0);
+
+-- reg to track left and top boundary
+    signal tr_x_reg, tr_x_next: unsigned(9 downto 0);
+    signal tr_y_reg, tr_y_next: unsigned(9 downto 0);
+
 -- round ball image
-    type rom_type is array(0 to 7) of std_logic_vector(0 to 7);
-    constant BALL_ROM: rom_type:= (
+    type ball_rom_type is array(0 to 7) of std_logic_vector(0 to 7);
+    constant BALL_ROM: ball_rom_type:= (
         "00111100",
         "01111110",
         "11111111",
@@ -103,6 +98,41 @@ architecture sq_ball_arch of pong_graph_st is
         "11111111",
         "01111110",
         "00111100");
+        
+    type tr_rom_type is array(0 to 31) of std_logic_vector(0 to 31);
+    constant TR_ROM: tr_rom_type:= (
+        "00000000000000001000000000000000",
+        "00000000000000011100000000000000",
+        "00000000000000111110000000000000",
+        "00000000000001111111000000000000",
+        "00000000000011111111100000000000",
+        "00000000000111111111110000000000",
+        "00000000001111111111111000000000",
+        "00000000011111111111111100000000",
+        "00000000111111111111111110000000",
+        "00000001111111111111111111000000",
+        "00000011111111111111111111100000",
+        "00000111111111111111111111110000",
+        "00001111111111111111111111111000",
+        "00011111111111111111111111111100",
+        "00111111111111111111111111111110",
+        "01111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111");
     
     signal rom_addr1, rom_col1: unsigned(2 downto 0);
     signal rom_data1: std_logic_vector(7 downto 0);
@@ -116,19 +146,23 @@ architecture sq_ball_arch of pong_graph_st is
     signal rom_data3: std_logic_vector(7 downto 0);
     signal rom_bit3: std_logic;
 
+    signal tr_rom_addr, tr_rom_col: unsigned(5 downto 0);
+    signal tr_rom_data: std_logic_vector(31 downto 0);
+    signal tr_rom_bit: std_logic;
+
+
 -- object output signals -- new signal to indicate if
 -- scan coord is within ball
-    signal wall_on, bar_on, sq_ball_on1, rd_ball_on1, sq_ball_on2, rd_ball_on2, sq_ball_on3, rd_ball_on3: std_logic;
-    signal wall_rgb, bar_rgb, ball_rgb: std_logic_vector(2 downto 0);
+    signal wall_on: std_logic;
+    signal sq_ball_on1, rd_ball_on1, sq_ball_on2, rd_ball_on2, sq_ball_on3, rd_ball_on3: std_logic;
+    signal sq_tr_on, tr_tr_on: std_logic;
+    signal wall_rgb, ball_rgb, tr_rgb: std_logic_vector(2 downto 0);
 -- ====================================================
 
 begin
     process (clk, reset)
     begin
         if (reset = '1') then
-            bar_x_reg <= (others => '0');
-            bar_y_reg <= (others => '0');
-
             ball_x_reg1 <= (others => '0');
             ball_y_reg1 <= (others => '0');
             x_delta_reg1 <= ("0000000100");
@@ -144,10 +178,10 @@ begin
             x_delta_reg3 <= ("0000000100");
             y_delta_reg3 <= ("0000000100");
 
+            tr_x_reg <= ("0011111100");
+            tr_y_reg <= ("0011111100");
+
         elsif (clk'event and clk = '1') then
-            bar_x_reg <= bar_x_next;
-            bar_y_reg <= bar_y_next;
-            
             ball_x_reg1 <= ball_x_next1;
             ball_y_reg1 <= ball_y_next1;
             x_delta_reg1 <= x_delta_next1;
@@ -162,6 +196,9 @@ begin
             ball_y_reg3 <= ball_y_next3;
             x_delta_reg3 <= x_delta_next3;
             y_delta_reg3 <= y_delta_next3;
+
+            tr_x_reg <= tr_x_next;
+            tr_y_reg <= tr_y_next;
         end if;
     end process;
 
@@ -176,40 +213,32 @@ begin
     wall_on <= '1' when (WALL_X_L <= pix_x) and (pix_x <= WALL_X_R) else '0';
     wall_rgb <= "001"; -- blue
 
-    -- pixel within paddle
-    bar_y_t <= bar_y_reg;
-    bar_y_b <= bar_y_t + BAR_Y_SIZE - 1;
-    bar_x_l <= bar_x_reg;
-    bar_x_r <= bar_x_reg + BAR_X_SIZE - 1;
-    bar_on <= '1' when (bar_x_l <= pix_x) and (pix_x <= bar_x_r) and (bar_y_t <= pix_y) and (pix_y <= bar_y_b) else '0';
-    bar_rgb <= "010"; -- green
-
-    -- Process bar movement requests
-    process( bar_y_reg, bar_y_b, bar_y_t, refr_tick, btn)
+    -- Process triangle movement requests
+    process( tr_y_reg, tr_y_b, tr_y_t, refr_tick, btn)
     begin
-        bar_y_next <= bar_y_reg; -- no move
+        tr_y_next <= tr_y_reg; -- no move
         if ( refr_tick = '1' ) then
         -- if btn 1 pressed and paddle not at bottom yet
-            if ( btn(1) = '1' and bar_y_b < (MAX_Y - 1 - BAR_V)) then
-                bar_y_next <= bar_y_reg + BAR_V;
+            if ( btn(1) = '1' and tr_y_b < (MAX_Y - 1 - TR_V)) then
+                tr_y_next <= tr_y_reg + TR_V;
         -- if btn 0 pressed and bar not at top yet
-            elsif ( btn(2) = '1' and bar_y_t > BAR_V) then
-                bar_y_next <= bar_y_reg - BAR_V;
+            elsif ( btn(2) = '1' and tr_y_t > TR_V) then
+                tr_y_next <= tr_y_reg - TR_V;
             end if;
         end if;
     end process;
 
-    -- Process bar movement requests
-    process( bar_x_reg, bar_x_r, bar_x_l, refr_tick, btn)
+    -- Process triangle movement requests
+    process( tr_x_reg, tr_x_r, tr_x_l, refr_tick, btn)
     begin
-        bar_x_next <= bar_x_reg; -- no move
+        tr_x_next <= tr_x_reg; -- no move
         if ( refr_tick = '1' ) then
         -- if btn 3 pressed and paddle not at right yet
-            if ( btn(3) = '1' and bar_x_r < (MAX_X - 1 - BAR_X)) then
-                bar_x_next <= bar_x_reg + BAR_X;
+            if ( btn(3) = '1' and tr_x_r < (MAX_X - 1 - TR_X)) then
+                tr_x_next <= tr_x_reg + TR_X;
         -- if btn 2 pressed and bar not at left yet
-            elsif ( btn(4) = '1' and bar_x_l > BAR_X) then
-                bar_x_next <= bar_x_reg - BAR_X;
+            elsif ( btn(4) = '1' and tr_x_l > TR_X) then
+                tr_x_next <= tr_x_reg - TR_X;
             end if;
         end if;
     end process;
@@ -230,10 +259,19 @@ begin
     ball_x_r3 <= ball_x_l3 + BALL_SIZE - 1;
     ball_y_b3 <= ball_y_t3 + BALL_SIZE - 1;
 
+-- set coordinates of triangle.
+    tr_x_l <= tr_x_reg;
+    tr_y_t <= tr_y_reg;
+    tr_x_r <= tr_x_l + TR_SIZE - 1;
+    tr_y_b <= tr_y_t + TR_SIZE - 1;
+
 -- pixel within square ball
     sq_ball_on1 <= '1' when (ball_x_l1 <= pix_x) and (pix_x <= ball_x_r1) and (ball_y_t1 <= pix_y) and (pix_y <= ball_y_b1) else '0';
     sq_ball_on2 <= '1' when (ball_x_l2 <= pix_x) and (pix_x <= ball_x_r2) and (ball_y_t2 <= pix_y) and (pix_y <= ball_y_b2) else '0';
     sq_ball_on3 <= '1' when (ball_x_l3 <= pix_x) and (pix_x <= ball_x_r3) and (ball_y_t3 <= pix_y) and (pix_y <= ball_y_b3) else '0';
+    
+-- pixel within square triangle
+    sq_tr_on <= '1' when (tr_x_l <= pix_x) and (pix_x <= tr_x_r) and (tr_y_t <= pix_y) and (pix_y <= tr_y_b) else '0';
 
 -- map scan coord to ROM addr/col -- use low order three
 -- bits of pixel and ball positions.
@@ -242,27 +280,38 @@ begin
     rom_addr2 <= pix_y(2 downto 0) - ball_y_t2(2 downto 0);
     rom_addr3 <= pix_y(2 downto 0) - ball_y_t3(2 downto 0);
 
+    tr_rom_addr <= pix_y(5 downto 0) - tr_y_t(5 downto 0);
+
 -- ROM column
     rom_col1 <= pix_x(2 downto 0) - ball_x_l1(2 downto 0);
     rom_col2 <= pix_x(2 downto 0) - ball_x_l2(2 downto 0);
     rom_col3 <= pix_x(2 downto 0) - ball_x_l3(2 downto 0);
+
+    tr_rom_col <= pix_x(5 downto 0) - tr_x_l(5 downto 0);
 
 -- Get row data
     rom_data1 <= BALL_ROM(to_integer(rom_addr1));
     rom_data2 <= BALL_ROM(to_integer(rom_addr2));
     rom_data3 <= BALL_ROM(to_integer(rom_addr3));
 
+    tr_rom_data <= TR_ROM(to_integer(tr_rom_addr));
+
 -- Get column bit
     rom_bit1 <= rom_data1(to_integer(rom_col1));
     rom_bit2 <= rom_data2(to_integer(rom_col2));
     rom_bit3 <= rom_data3(to_integer(rom_col3));
+
+    tr_rom_bit <= tr_rom_data(to_integer(tr_rom_col));
 
 -- Turn ball on only if within square and ROM bit is 1.
     rd_ball_on1 <= '1' when (sq_ball_on1 = '1') and (rom_bit1 = '1') else '0';
     rd_ball_on2 <= '1' when (sq_ball_on2 = '1') and (rom_bit2 = '1') else '0';
     rd_ball_on3 <= '1' when (sq_ball_on3 = '1') and (rom_bit3 = '1') else '0';
 
+    tr_tr_on <= '1' when (sq_tr_on = '1') and (tr_rom_bit = '1') else '0';
+
     ball_rgb <= "100"; -- red
+    tr_rgb <= "011"; -- cyan
 -- Update the ball position 60 times per second.
     ball_x_next1 <= ball_x_reg1 + x_delta_reg1 when refr_tick = '1' else ball_x_reg1;
     ball_y_next1 <= ball_y_reg1 + y_delta_reg1 when refr_tick = '1' else ball_y_reg1;
@@ -274,7 +323,7 @@ begin
     ball_y_next3 <= ball_y_reg3 + y_delta_reg3 when refr_tick = '1' else ball_y_reg3;
 
 -- Set the value of the next ball position according to the boundaries.
-    process(x_delta_reg1, y_delta_reg1, ball_y_t1, ball_x_l1, ball_x_r1, ball_y_t1, ball_y_b1, bar_y_t, bar_y_b)
+    process(x_delta_reg1, y_delta_reg1, ball_y_t1, ball_x_l1, ball_x_r1, ball_y_t1, ball_y_b1, tr_y_t, tr_y_b, tr_x_l, tr_x_r)
     begin
         x_delta_next1 <= x_delta_reg1;
         y_delta_next1 <= y_delta_reg1;
@@ -288,15 +337,15 @@ begin
         elsif (ball_x_l1 <= WALL_X_R ) then
             x_delta_next1 <= BALL_V_P1;
         -- right corner of ball inside bar
-        elsif ((BAR_X_L <= ball_x_r1) and (ball_x_r1 <= BAR_X_R)) then
+        elsif ((tr_x_l <= ball_x_r1) and (ball_x_r1 <= tr_x_r)) then
         -- some portion of ball hitting paddle, reverse dir
-            if ((bar_y_t <= ball_y_b1) and (ball_y_t1 <= bar_y_b)) then
+            if ((tr_y_t <= ball_y_b1) and (ball_y_t1 <= tr_y_b)) then
                 x_delta_next1 <= BALL_V_N1;
             end if;
         end if;
     end process;
 
-    process(x_delta_reg2, y_delta_reg2, ball_y_t2, ball_x_l2, ball_x_r2, ball_y_t2, ball_y_b2, bar_y_t, bar_y_b)
+    process(x_delta_reg2, y_delta_reg2, ball_y_t2, ball_x_l2, ball_x_r2, ball_y_t2, ball_y_b2, tr_y_t, tr_y_b, tr_x_l, tr_x_r)
     begin
         x_delta_next2 <= x_delta_reg2;
         y_delta_next2 <= y_delta_reg2;
@@ -310,15 +359,15 @@ begin
         elsif (ball_x_l2 <= WALL_X_R ) then
             x_delta_next2 <= BALL_V_P2;
         -- right corner of ball inside bar
-        elsif ((BAR_X_L <= ball_x_r2) and (ball_x_r2 <= BAR_X_R)) then
+        elsif ((tr_x_l <= ball_x_r2) and (ball_x_r2 <= tr_x_r)) then
         -- some portion of ball hitting paddle, reverse dir
-            if ((bar_y_t <= ball_y_b2) and (ball_y_t2 <= bar_y_b)) then
+            if ((tr_y_t <= ball_y_b2) and (ball_y_t2 <= tr_y_b)) then
                 x_delta_next2 <= BALL_V_N2;
             end if;
         end if;
     end process;
 
-    process(x_delta_reg3, y_delta_reg3, ball_y_t3, ball_x_l3, ball_x_r3, ball_y_t3, ball_y_b3, bar_y_t, bar_y_b)
+    process(x_delta_reg3, y_delta_reg3, ball_y_t3, ball_x_l3, ball_x_r3, ball_y_t3, ball_y_b3, tr_y_t, tr_y_b, tr_x_l, tr_x_r)
     begin
         x_delta_next3 <= x_delta_reg3;
         y_delta_next3 <= y_delta_reg3;
@@ -332,23 +381,23 @@ begin
         elsif (ball_x_l3 <= WALL_X_R ) then
             x_delta_next3 <= BALL_V_P3;
         -- right corner of ball inside bar
-        elsif ((BAR_X_L <= ball_x_r3) and (ball_x_r3 <= BAR_X_R)) then
+        elsif ((tr_x_l <= ball_x_r3) and (ball_x_r3 <= tr_x_r)) then
         -- some portion of ball hitting paddle, reverse dir
-            if ((bar_y_t <= ball_y_b3) and (ball_y_t3 <= bar_y_b)) then
+            if ((tr_y_t <= ball_y_b3) and (ball_y_t3 <= tr_y_b)) then
                 x_delta_next3 <= BALL_V_N3;
             end if;
         end if;
     end process;
 
-    process (video_on, wall_on, bar_on, rd_ball_on1, rd_ball_on2, rd_ball_on3, wall_rgb, bar_rgb, ball_rgb)
+    process (video_on, wall_on, rd_ball_on1, rd_ball_on2, rd_ball_on3, tr_tr_on, wall_rgb, ball_rgb, tr_rgb)
     begin
         if (video_on = '0') then
             graph_rgb <= "000"; -- blank
         else
             if (wall_on = '1') then
                 graph_rgb <= wall_rgb;
-            elsif (bar_on = '1') then
-                graph_rgb <= bar_rgb;
+            elsif (tr_tr_on = '1') then
+                graph_rgb <= tr_rgb;
             elsif (rd_ball_on1 = '1') then
                 graph_rgb <= ball_rgb;
             elsif (rd_ball_on2 = '1') then
