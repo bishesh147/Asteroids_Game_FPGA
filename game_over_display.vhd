@@ -68,22 +68,73 @@ architecture arch of game_over_display is
 
     signal sq_G_on1: std_logic;
     signal G_G_on1: std_logic;
+
+    constant A_ROM: letter_type:= (
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11111111111111111111111111111111",
+        "11111111111111111111111111111111",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011",
+        "11000000000000000000000000000011"
+    );
+
+    constant A_X_L1: unsigned := to_unsigned(260, 10);
+    constant A_X_R1: unsigned := A_X_L1 + LETTER_SIZE - 1;
+    constant A_Y_T1: unsigned := to_unsigned(150, 10);
+    constant A_Y_B1: unsigned := A_Y_T1 + LETTER_SIZE - 1;
+
+    signal A_rom_addr1, A_rom_col1: unsigned(4 downto 0);
+    signal A_rom_data1: std_logic_vector(31 downto 0);
+    signal A_rom_bit1: std_logic;
+
+    signal sq_A_on1: std_logic;
+    signal A_A_on1: std_logic;
     
 begin
     pix_x <= unsigned(pixel_x);
     pix_y <= unsigned(pixel_y);
 
     sq_G_on1 <= '1' when (G_X_L1 <= pix_x) and (pix_x <= G_X_R1) and (G_Y_T1 <= pix_y) and (pix_y <= G_Y_B1) else '0';
-    
     G_rom_addr1 <= pix_y(4 downto 0) - G_Y_T1(4 downto 0);
     G_rom_col1 <= pix_x(4 downto 0) - G_X_L1(4 downto 0);
-
     G_rom_data1 <= G_ROM(to_integer(G_rom_addr1));
     G_rom_bit1 <= G_rom_data1(to_integer(G_rom_col1));
-
     G_G_on1 <= '1' when (sq_G_on1 = '1') and (G_rom_bit1 = '1') else '0';
 
-    graph_rgb <= LETTER_RGB when ((G_G_on1 = '1')) else "000";
+    sq_A_on1 <= '1' when (A_X_L1 <= pix_x) and (pix_x <= A_X_R1) and (A_Y_T1 <= pix_y) and (pix_y <= A_Y_B1) else '0';
+    A_rom_addr1 <= pix_y(4 downto 0) - A_Y_T1(4 downto 0);
+    A_rom_col1 <= pix_x(4 downto 0) - A_X_L1(4 downto 0);
+    A_rom_data1 <= A_ROM(to_integer(A_rom_addr1));
+    A_rom_bit1 <= A_rom_data1(to_integer(A_rom_col1));
+    A_A_on1 <= '1' when (sq_A_on1 = '1') and (A_rom_bit1 = '1') else '0';
+
+    graph_rgb <= LETTER_RGB when ((G_G_on1 = '1') or (A_A_on1 = '1')) else "000";
 end arch;
 
 
