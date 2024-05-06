@@ -11,6 +11,7 @@ entity pong_graph_st is
         btn: in std_logic_vector(4 downto 0);
         video_on: in std_logic;
         pixel_x, pixel_y: in std_logic_vector(9 downto 0);
+        hit_cnt: out std_logic_vector(2 downto 0);
         graph_rgb: out std_logic_vector(2 downto 0)
     );
 end pong_graph_st;
@@ -70,7 +71,7 @@ architecture sq_ball_arch of pong_graph_st is
 
 -- ball movement can be pos or neg
     constant BALL_V_P1: unsigned(9 downto 0):= to_unsigned(1,10);
-    constant BALL_V_N1: unsigned(9 downto 0):= unsigned(to_signed(-3,10));
+    constant BALL_V_N1: unsigned(9 downto 0):= unsigned(to_signed(-1,10));
 
     constant BALL_V_P2: unsigned(9 downto 0):= to_unsigned(2,10);
     constant BALL_V_N2: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
@@ -176,6 +177,9 @@ architecture sq_ball_arch of pong_graph_st is
     signal sq_tr_on, tr_tr_on: std_logic;
     signal missile_on: std_logic;
     signal wall_rgb, ball_rgb, tr_rgb, missile_rgb: std_logic_vector(2 downto 0);
+
+    signal hit_log1, hit_log2, hit_log3: boolean;
+    signal hit_cnt_reg, hit_cnt_next: unsigned (2 downto 0);
 -- ====================================================
 
 begin
@@ -204,6 +208,8 @@ begin
             missile_y_reg <= ("0011111100");
             missile_fire_reg <= '0';
 
+            hit_cnt_reg <= (others => '0');
+
             btn_state_reg <= idle;
 
         elsif (clk'event and clk = '1') then
@@ -229,6 +235,8 @@ begin
             missile_y_reg <= missile_y_next;
             
             missile_fire_reg <= missile_fire_next;
+
+            hit_cnt_reg <= hit_cnt_next;
 
             btn_state_reg <= btn_state_next;
         end if;
@@ -288,8 +296,6 @@ begin
 
                 if (missile_y_t < 1) then
                     missile_fire_next <= '0';
-                else
-                    missile_fire_next <= missile_fire_reg;
                 end if;
             
             when button_in =>
@@ -315,6 +321,9 @@ begin
                 missile_x_next <= tr_x_l + TR_SIZE/2;
                 missile_y_next <= tr_y_t;
             end if;
+        else
+            missile_x_next <= missile_x_reg;
+            missile_y_next <= missile_y_reg;
         end if;
     end process;
 
@@ -495,6 +504,33 @@ begin
             end if;
         end if;
     end process;
+
+    hit_log1 <= (tr_x_l < ball_x_r1) and 
+                (ball_x_r1 < tr_x_l + BALL_V_P1) and 
+                (x_delta_reg1 = BALL_V_N1) and 
+                (tr_y_t < ball_y_b1) and 
+                (ball_y_t1 < tr_y_b) and 
+                (refr_tick = '1');
+
+    hit_log2 <= (tr_X_L < ball_x_r2) and 
+                (ball_x_r2 < tr_X_L + BALL_V_P2) and 
+                (x_delta_reg2 = BALL_V_N2) and 
+                (tr_y_t < ball_y_b2) and 
+                (ball_y_t2 < tr_y_b) and 
+                (refr_tick = '1');
+
+    hit_log3 <= (tr_X_L < ball_x_r3) and 
+                (ball_x_r3 < tr_X_L + BALL_V_P3) and 
+                (x_delta_reg3 = BALL_V_N3) and 
+                (tr_y_t < ball_y_b3) and 
+                (ball_y_t3 < tr_y_b) and 
+                (refr_tick = '1');
+
+    hit_cnt_next <= hit_cnt_reg+1 when (hit_log1 or hit_log2 or hit_log3)
+                    else hit_cnt_reg;
+                            
+    -- output logic
+    hit_cnt <= std_logic_vector(hit_cnt_reg);
 end sq_ball_arch;
 
    
