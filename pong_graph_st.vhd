@@ -80,19 +80,61 @@ architecture sq_ball_arch of pong_graph_st is
     constant BALL_V_P3: unsigned(9 downto 0):= to_unsigned(2,10);
     constant BALL_V_N3: unsigned(9 downto 0):= unsigned(to_signed(-2,10));
 
--- firing missile
-    constant MISSILE_SIZE_Y: integer := 16;
-    constant MISSILE_SIZE_X: integer := 8;
-    signal missile_x_l, missile_x_r: unsigned(9 downto 0);
-    signal missile_y_t, missile_y_b: unsigned(9 downto 0);
+-- firing missile1, up
+    constant MISSILE_SIZE_Y1: integer := 16;
+    constant MISSILE_SIZE_X1: integer := 4;
+    signal missile_x_l1, missile_x_r1: unsigned(9 downto 0);
+    signal missile_y_t1, missile_y_b1: unsigned(9 downto 0);
 
-    signal missile_fire_reg, missile_fire_next: std_logic;
+    signal missile_fire_reg1, missile_fire_next1: std_logic;
 
-    constant MISSILE_V: integer := 2;
+    constant MISSILE_V1: integer := -2;
 
 -- reg to track left and top boundary
-    signal missile_x_reg, missile_x_next: unsigned(9 downto 0);
-    signal missile_y_reg, missile_y_next: unsigned(9 downto 0);
+    signal missile_x_reg1, missile_x_next1: unsigned(9 downto 0);
+    signal missile_y_reg1, missile_y_next1: unsigned(9 downto 0);
+
+-- firing missile2, down
+    constant MISSILE_SIZE_Y2: integer := 16;
+    constant MISSILE_SIZE_X2: integer := 4;
+    signal missile_x_l2, missile_x_r2: unsigned(9 downto 0);
+    signal missile_y_t2, missile_y_b2: unsigned(9 downto 0);
+
+    signal missile_fire_reg2, missile_fire_next2: std_logic;
+
+    constant MISSILE_V2: integer := 2;
+
+-- reg to track left and top boundary
+    signal missile_x_reg2, missile_x_next2: unsigned(9 downto 0);
+    signal missile_y_reg2, missile_y_next2: unsigned(9 downto 0);
+
+    -- firing missile3, right
+    constant MISSILE_SIZE_Y3: integer := 4;
+    constant MISSILE_SIZE_X3: integer := 16;
+    signal missile_x_l3, missile_x_r3: unsigned(9 downto 0);
+    signal missile_y_t3, missile_y_b3: unsigned(9 downto 0);
+
+    signal missile_fire_reg3, missile_fire_next3: std_logic;
+
+    constant MISSILE_V3: integer := 2;
+
+    -- reg to track left and top boundary
+    signal missile_x_reg3, missile_x_next3: unsigned(9 downto 0);
+    signal missile_y_reg3, missile_y_next3: unsigned(9 downto 0);
+
+    -- firing missile4, left
+    constant MISSILE_SIZE_Y4: integer := 4;
+    constant MISSILE_SIZE_X4: integer := 16;
+    signal missile_x_l4, missile_x_r4: unsigned(9 downto 0);
+    signal missile_y_t4, missile_y_b4: unsigned(9 downto 0);
+
+    signal missile_fire_reg4, missile_fire_next4: std_logic;
+
+    constant MISSILE_V4: integer := -2;
+
+-- reg to track left and top boundary
+    signal missile_x_reg4, missile_x_next4: unsigned(9 downto 0);
+    signal missile_y_reg4, missile_y_next4: unsigned(9 downto 0);
 
 -- reg to track middle button press
     type btn_state is (idle, button_in, button_out);
@@ -176,7 +218,7 @@ architecture sq_ball_arch of pong_graph_st is
     signal wall_on: std_logic;
     signal sq_ball_on1, rd_ball_on1, sq_ball_on2, rd_ball_on2, sq_ball_on3, rd_ball_on3: std_logic;
     signal sq_tr_on, tr_tr_on: std_logic;
-    signal missile_on: std_logic;
+    signal missile_on1, missile_on2, missile_on3, missile_on4: std_logic;
     signal wall_rgb, ball_rgb, tr_rgb, missile_rgb: std_logic_vector(2 downto 0);
 
     signal life_cnt_reg, life_cnt_next: unsigned (1 downto 0);
@@ -206,9 +248,21 @@ begin
             tr_x_reg <= ("0011111100");
             tr_y_reg <= ("0011111100");
 
-            missile_x_reg <= ("0011111100");
-            missile_y_reg <= ("0011111100");
-            missile_fire_reg <= '0';
+            missile_x_reg1 <= ("0011111100");
+            missile_y_reg1 <= ("0011111100");
+            missile_fire_reg1 <= '0';
+
+            missile_x_reg2 <= ("0011111100");
+            missile_y_reg2 <= ("0011111100");
+            missile_fire_reg2 <= '0';
+
+            missile_x_reg3 <= ("0011111100");
+            missile_y_reg3 <= ("0011111100");
+            missile_fire_reg3 <= '0';
+
+            missile_x_reg4 <= ("0011111100");
+            missile_y_reg4 <= ("0011111100");
+            missile_fire_reg4 <= '0';
 
             hit_cnt_reg <= (others => '0');
             life_cnt_reg <= ("11");
@@ -234,10 +288,21 @@ begin
             tr_x_reg <= tr_x_next;
             tr_y_reg <= tr_y_next;
 
-            missile_x_reg <= missile_x_next;
-            missile_y_reg <= missile_y_next;
-            
-            missile_fire_reg <= missile_fire_next;
+            missile_x_reg1 <= missile_x_next1;
+            missile_y_reg1 <= missile_y_next1;
+            missile_fire_reg1 <= missile_fire_next1;
+
+            missile_x_reg2 <= missile_x_next2;
+            missile_y_reg2 <= missile_y_next2;
+            missile_fire_reg2 <= missile_fire_next2;
+
+            missile_x_reg3 <= missile_x_next3;
+            missile_y_reg3 <= missile_y_next3;
+            missile_fire_reg3 <= missile_fire_next3;
+
+            missile_x_reg4 <= missile_x_next4;
+            missile_y_reg4 <= missile_y_next4;
+            missile_fire_reg4 <= missile_fire_next4;
 
             hit_cnt_reg <= hit_cnt_next;
             life_cnt_reg <= life_cnt_next;
@@ -288,46 +353,112 @@ begin
     end process;
 
     -- Process for middle button
-    process(btn_state_reg, btn_state_next, btn, missile_fire_next, missile_y_t)
+    process(btn_state_reg, btn_state_next, btn, missile_fire_next1, missile_fire_next2, missile_fire_next3, missile_fire_next4, missile_y_t1, missile_y_t2, missile_x_l1, missile_x_l2)
     begin
         btn_state_next <= btn_state_reg;
-        missile_fire_next <= missile_fire_reg;
+        missile_fire_next1 <= missile_fire_reg1;
+        missile_fire_next2 <= missile_fire_reg2;
+        missile_fire_next3 <= missile_fire_reg3;
+        missile_fire_next4 <= missile_fire_reg4;
         case btn_state_reg is
             when idle =>
                 if (btn(0) = '1') then
                     btn_state_next <= button_in;
                 end if;
 
-                if (missile_y_t < 1) then
-                    missile_fire_next <= '0';
+                if ((missile_y_t1 < 1) or (missile_y_t2 < 1)) then
+                    missile_fire_next1 <= '0';
+                    missile_fire_next2 <= '0';
+                end if;
+
+                if ((missile_x_l1 < 1) or (missile_x_l2 < 1)) then
+                    missile_fire_next3 <= '0';
+                    missile_fire_next4 <= '0';
                 end if;
             
             when button_in =>
-                missile_fire_next <= '0';
+                missile_fire_next1 <= '0';
+                missile_fire_next2 <= '0';
+                missile_fire_next3 <= '0';
+                missile_fire_next4 <= '0';
                 if (btn(0) = '0') then
                     btn_state_next <= button_out;
                 end if;
 
             when button_out =>
-                missile_fire_next <= '1';
+                missile_fire_next1 <= '1';
+                missile_fire_next2 <= '1';
+                missile_fire_next3 <= '1';
+                missile_fire_next4 <= '1';
                 btn_state_next <= idle;
         end case;
     end process;
 
-    -- Process for missile
-    process(missile_x_reg, missile_y_reg, missile_x_next, missile_y_next, missile_y_t, missile_fire_reg, missile_fire_next, tr_x_l, tr_y_t, refr_tick)
+    -- Process for missile1
+    process(missile_x_reg1, missile_y_reg1, missile_x_next1, missile_y_next1, missile_y_t1, missile_fire_reg1, missile_fire_next1, tr_x_l, tr_y_t, refr_tick)
     begin
         if (refr_tick = '1') then
-            if (missile_fire_reg = '1') then
-                missile_x_next <= missile_x_reg;
-                missile_y_next <= missile_y_reg - MISSILE_V;
+            if (missile_fire_reg1 = '1') then
+                missile_x_next1 <= missile_x_reg1;
+                missile_y_next1 <= missile_y_reg1 + to_unsigned(MISSILE_V1, 10);
             else
-                missile_x_next <= tr_x_l + TR_SIZE/2;
-                missile_y_next <= tr_y_t;
+                missile_x_next1 <= tr_x_l + TR_SIZE/2;
+                missile_y_next1 <= tr_y_t;
             end if;
         else
-            missile_x_next <= missile_x_reg;
-            missile_y_next <= missile_y_reg;
+            missile_x_next1 <= missile_x_reg1;
+            missile_y_next1 <= missile_y_reg1;
+        end if;
+    end process;
+
+    -- Process for missile2
+    process(missile_x_reg2, missile_y_reg2, missile_x_next2, missile_y_next2, missile_y_t2, missile_fire_reg2, missile_fire_next2, tr_x_l, tr_y_t, refr_tick)
+    begin
+        if (refr_tick = '1') then
+            if (missile_fire_reg2 = '1') then
+                missile_x_next2 <= missile_x_reg2;
+                missile_y_next2 <= missile_y_reg2 + to_unsigned(MISSILE_V2, 10);
+            else
+                missile_x_next2 <= tr_x_l + TR_SIZE/2;
+                missile_y_next2 <= tr_y_t;
+            end if;
+        else
+            missile_x_next2 <= missile_x_reg2;
+            missile_y_next2 <= missile_y_reg2;
+        end if;
+    end process;
+
+    -- Process for missile3
+    process(missile_x_reg3, missile_y_reg3, missile_x_next3, missile_y_next3, missile_y_t3, missile_fire_reg3, missile_fire_next3, tr_x_l, tr_y_t, refr_tick)
+    begin
+        if (refr_tick = '1') then
+            if (missile_fire_reg3 = '1') then
+                missile_x_next3 <= missile_x_reg3 + to_unsigned(MISSILE_V3, 10);
+                missile_y_next3 <= missile_y_reg3;
+            else
+                missile_x_next3 <= tr_x_l + TR_SIZE/2;
+                missile_y_next3 <= tr_y_t;
+            end if;
+        else
+            missile_x_next3 <= missile_x_reg3;
+            missile_y_next3 <= missile_y_reg3;
+        end if;
+    end process;
+
+    -- Process for missile4
+    process(missile_x_reg4, missile_y_reg4, missile_x_next4, missile_y_next4, missile_y_t4, missile_fire_reg4, missile_fire_next4, tr_x_l, tr_y_t, refr_tick)
+    begin
+        if (refr_tick = '1') then
+            if (missile_fire_reg4 = '1') then
+                missile_x_next4 <= missile_x_reg4 + to_unsigned(MISSILE_V4, 10);
+                missile_y_next4 <= missile_y_reg4;
+            else
+                missile_x_next4 <= tr_x_l + TR_SIZE/2;
+                missile_y_next4 <= tr_y_t;
+            end if;
+        else
+            missile_x_next4 <= missile_x_reg4;
+            missile_y_next4 <= missile_y_reg4;
         end if;
     end process;
 
@@ -354,13 +485,34 @@ begin
     tr_x_r <= tr_x_l + TR_SIZE - 1;
     tr_y_b <= tr_y_t + TR_SIZE - 1;
 
--- pixel within missile.
-    missile_x_l <= missile_x_reg;
-    missile_y_t <= missile_y_reg;
-    missile_x_r <= missile_x_l + MISSILE_SIZE_X - 1;
-    missile_y_b <= missile_y_t + MISSILE_SIZE_Y - 1;
-    missile_on <= '1' when (missile_x_l <= pix_x) and (pix_x <= missile_x_r) and (missile_y_t <= pix_y) and (pix_y <= missile_y_b) and (missile_fire_reg = '1') else '0';
-    missile_rgb <= "100"; --white
+-- pixel within missile1
+    missile_x_l1 <= missile_x_reg1;
+    missile_y_t1 <= missile_y_reg1;
+    missile_x_r1 <= missile_x_l1 + MISSILE_SIZE_X1 - 1;
+    missile_y_b1 <= missile_y_t1 + MISSILE_SIZE_Y1 - 1;
+    missile_on1 <= '1' when (missile_x_l1 <= pix_x) and (pix_x <= missile_x_r1) and (missile_y_t1 <= pix_y) and (pix_y <= missile_y_b1) and (missile_fire_reg1 = '1') else '0';
+
+    -- pixel within missile2
+    missile_x_l2 <= missile_x_reg2;
+    missile_y_t2 <= missile_y_reg2;
+    missile_x_r2 <= missile_x_l2 + MISSILE_SIZE_X2 - 1;
+    missile_y_b2 <= missile_y_t2 + MISSILE_SIZE_Y2 - 1;
+    missile_on2 <= '1' when (missile_x_l2 <= pix_x) and (pix_x <= missile_x_r2) and (missile_y_t2 <= pix_y) and (pix_y <= missile_y_b2) and (missile_fire_reg2 = '1') else '0';
+
+    -- pixel within missile3
+    missile_x_l3 <= missile_x_reg3;
+    missile_y_t3 <= missile_y_reg3;
+    missile_x_r3 <= missile_x_l3 + MISSILE_SIZE_X3 - 1;
+    missile_y_b3 <= missile_y_t3 + MISSILE_SIZE_Y3 - 1;
+    missile_on3 <= '1' when (missile_x_l3 <= pix_x) and (pix_x <= missile_x_r3) and (missile_y_t3 <= pix_y) and (pix_y <= missile_y_b3) and (missile_fire_reg3 = '1') else '0';
+
+    -- pixel within missile4
+    missile_x_l4 <= missile_x_reg4;
+    missile_y_t4 <= missile_y_reg4;
+    missile_x_r4 <= missile_x_l4 + MISSILE_SIZE_X4 - 1;
+    missile_y_b4 <= missile_y_t4 + MISSILE_SIZE_Y4 - 1;
+    missile_on4 <= '1' when (missile_x_l4 <= pix_x) and (pix_x <= missile_x_r4) and (missile_y_t4 <= pix_y) and (pix_y <= missile_y_b4) and (missile_fire_reg4 = '1') else '0';
+    missile_rgb <= "111"; --white
 
 -- pixel within square ball
     sq_ball_on1 <= '1' when (ball_x_l1 <= pix_x) and (pix_x <= ball_x_r1) and (ball_y_t1 <= pix_y) and (pix_y <= ball_y_b1) else '0';
@@ -495,7 +647,13 @@ begin
                 graph_rgb <= wall_rgb;
             elsif (tr_tr_on = '1') then
                 graph_rgb <= tr_rgb;
-            elsif (missile_on = '1') then
+            elsif (missile_on1 = '1') then
+                graph_rgb <= missile_rgb;
+            elsif (missile_on2 = '1') then
+                graph_rgb <= missile_rgb;
+            elsif (missile_on3 = '1') then
+                graph_rgb <= missile_rgb;
+            elsif (missile_on4 = '1') then
                 graph_rgb <= missile_rgb;
             elsif (rd_ball_on1 = '1') then
                 graph_rgb <= ball_rgb;
