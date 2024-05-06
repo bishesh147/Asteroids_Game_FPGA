@@ -248,6 +248,7 @@ architecture Behavioral of counter_disp is
     signal hit_cnter_cur_val_on: std_logic;
     -- hit cnter value color
     signal hit_cnter_rgb:std_logic_vector(2 downto 0);
+    signal life_rgb:std_logic_vector(2 downto 0);
     -- signals that store unsigned values of the square counter boundaries
     signal hit_cnt_y_t_u: unsigned(9 downto 0);
     signal hit_cnt_x_l_u: unsigned(9 downto 0);
@@ -316,7 +317,8 @@ begin
     hit_cnter_cur_val_on <= '1' when (sq_hit_cnter_on = '1') and (rom_bit_cnter = '1') else '0';
 
     -- set the cnter value color
-    hit_cnter_rgb <= "100";
+    hit_cnter_rgb <= "110"; --Yellow
+    life_rgb <= "100"; --Red
 
     life_life_on1 <= '1' when (sq_life_on1 = '1') and (life_rom_bit1 = '1') and (life_cnt > "10") else '0';
     life_life_on2 <= '1' when (sq_life_on2 = '1') and (life_rom_bit2 = '1') and (life_cnt > "01") else '0';
@@ -325,7 +327,8 @@ begin
     --- Write your VHDL code below:
     -- set graph_rgb
 
-    graph_rgb <= hit_cnter_rgb when ((hit_cnter_cur_val_on = '1') or (life_life_on1 = '1') or (life_life_on2 = '1') or (life_life_on3 = '1')) else "110";
+    graph_rgb <= hit_cnter_rgb when (hit_cnter_cur_val_on = '1') else
+                 life_rgb when ((life_life_on1 = '1') or (life_life_on2 = '1') or (life_life_on3 = '1')) else "001";
 
     -- assign output sq_hit_cnter_on_output
     sq_hit_cnter_on_output <= sq_hit_cnter_on or sq_life_on1 or sq_life_on2 or sq_life_on3;

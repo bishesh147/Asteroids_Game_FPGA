@@ -408,7 +408,7 @@ begin
     tr_tr_on <= '1' when (sq_tr_on = '1') and (tr_rom_bit = '1') else '0';
 
     ball_rgb <= "100"; -- red
-    tr_rgb <= "011"; -- cyan
+    tr_rgb <= "000"; -- black
 -- Update the ball position 60 times per second.
     ball_x_next1 <= ball_x_reg1 + x_delta_reg1 when refr_tick = '1' else ball_x_reg1;
     ball_y_next1 <= ball_y_reg1 + y_delta_reg1 when refr_tick = '1' else ball_y_reg1;
@@ -504,7 +504,7 @@ begin
             elsif (rd_ball_on3 = '1') then
                 graph_rgb <= ball_rgb;
             else
-                graph_rgb <= "110"; -- yellow bkgnd
+                graph_rgb <= "001"; -- blue bkgnd
             end if;
         end if;
     end process;

@@ -18,7 +18,7 @@ architecture arch of game_over_display is
     signal pix_x, pix_y: unsigned(9 downto 0);
 
     constant LETTER_SIZE: unsigned := to_unsigned(32, 10);
-    constant LETTER_RGB: std_logic_vector := "110";
+    constant LETTER_RGB: std_logic_vector := "100"; --Red
 
     type letter_type is array (0 to 31) of std_logic_vector(31 downto 0);
 
